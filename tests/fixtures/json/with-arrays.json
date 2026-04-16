@@ -1,0 +1,27 @@
+{
+  "orderId": "ORD-001",
+  "customer": {
+    "name": "Alice",
+    "email": "alice@example.com"
+  },
+  "items": [
+    {
+      "id": "ITEM-1",
+      "name": "Widget A",
+      "quantity": 2,
+      "price": 29.99
+    },
+    {
+      "id": "ITEM-2",
+      "name": "Widget B",
+      "quantity": 1,
+      "price": 49.99
+    }
+  ],
+  "tags": ["urgent", "wholesale"],
+  "totals": {
+    "subtotal": 109.97,
+    "tax": 8.80,
+    "total": 118.77
+  }
+}

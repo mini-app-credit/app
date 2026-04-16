@@ -1,0 +1,31 @@
+export const SHARED_DI_TOKENS = {
+    // DATABASE
+    DATABASE_CONFIG: Symbol.for('DATABASE_CONFIG'),
+    DATABASE_CLIENT: Symbol.for('DATABASE_CLIENT'),
+
+    // S3
+    S3_CLIENT: Symbol.for('S3_CLIENT'),
+    S3_CONFIG: Symbol.for('S3_CONFIG'),
+
+    // REDIS
+    REDIS_CLIENT: Symbol.for('REDIS_CLIENT'),
+    REDIS_CONFIG: Symbol.for('REDIS_CONFIG'),
+    REDIS_SERVICE: Symbol.for('REDIS_SERVICE'),
+
+    // NATS
+    NATS_CONFIG: Symbol.for('NATS_CONFIG'),
+    NATS_CLIENT: Symbol.for('NATS_CLIENT'),
+
+    // EVENT PUBLISHER
+    EVENT_PUBLISHER: Symbol.for('EVENT_PUBLISHER_SERVICE'),
+
+    // HASH SERVICE
+    HASH_SERVICE: Symbol.for('HASH_SERVICE'),
+
+    // RATE LIMIT SERVICE
+    RATE_LIMIT_SERVICE: Symbol.for('RATE_LIMIT_SERVICE'),
+
+    // AMPLITUDE
+    AMPLITUDE_CLIENT: Symbol.for('AMPLITUDE_CLIENT'),
+    AMPLITUDE_CONFIG: Symbol.for('AMPLITUDE_CONFIG'),
+} as const;

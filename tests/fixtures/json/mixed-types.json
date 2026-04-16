@@ -1,0 +1,24 @@
+{
+  "stringField": "hello",
+  "numberField": 42,
+  "floatField": 3.14,
+  "boolTrue": true,
+  "boolFalse": false,
+  "nullField": null,
+  "emptyString": "",
+  "zero": 0,
+  "negativeNumber": -100,
+  "largeNumber": 999999999999,
+  "nested": {
+    "deep": {
+      "value": "found"
+    }
+  },
+  "emptyArray": [],
+  "emptyObject": {},
+  "arrayOfPrimitives": [1, 2, 3],
+  "arrayOfObjects": [
+    { "key": "a" },
+    { "key": "b" }
+  ]
+}

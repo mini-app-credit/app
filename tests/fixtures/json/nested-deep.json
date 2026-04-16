@@ -1,0 +1,29 @@
+{
+  "person": {
+    "name": {
+      "first": "Jane",
+      "last": "Smith"
+    },
+    "address": {
+      "street": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "zip": "10001",
+      "country": {
+        "code": "US",
+        "name": "United States"
+      }
+    },
+    "contacts": {
+      "email": "jane@example.com",
+      "phone": {
+        "home": "+1-555-0100",
+        "work": "+1-555-0200"
+      }
+    }
+  },
+  "metadata": {
+    "created": "2024-01-15",
+    "source": "api"
+  }
+}

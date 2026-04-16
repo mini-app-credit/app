@@ -1,0 +1,27 @@
+export const IAM_DI_TOKENS = {
+  REPOSITORIES: {
+    ACCOUNT: Symbol.for('ACCOUNT_REPOSITORY'),
+    TOKEN: Symbol.for('TOKEN_REPOSITORY'),
+    USER: Symbol.for('USER_REPOSITORY'),
+  },
+  SERVICES: {
+    JWT: Symbol.for('JWT_SERVICE'),
+    AUTH: Symbol.for('AUTH_SERVICE'),
+    USER: Symbol.for('USER_SERVICE'),
+  },
+  CONFIGS: {
+    CAPTCHA: Symbol.for('CAPTCHA_CONFIG'),
+    JWT: Symbol.for('JWT_CONFIG'),
+  },
+  USE_CASES: {
+    SIGN_UP_BY_EMAIL: Symbol.for('SIGN_UP_BY_EMAIL_USE_CASE'),
+    SIGN_IN_BY_EMAIL: Symbol.for('SIGN_IN_BY_EMAIL_USE_CASE'),
+    INVOKE_EMAIL_VERIFICATION: Symbol.for('INVOKE_EMAIL_VERIFICATION_USE_CASE'),
+    CONFIRM_EMAIL_VERIFICATION: Symbol.for('CONFIRM_EMAIL_VERIFICATION_USE_CASE'),
+    REFRESH_TOKEN: Symbol.for('REFRESH_TOKEN_USE_CASE'),
+    SIGN_OUT: Symbol.for('SIGN_OUT_USE_CASE'),
+    FORGOT_PASSWORD: Symbol.for('FORGOT_PASSWORD_USE_CASE'),
+    RESET_PASSWORD: Symbol.for('RESET_PASSWORD_USE_CASE'),
+    FIND_USER_BY_ID: Symbol.for('FIND_USER_BY_ID_USE_CASE'),
+  },
+} as const;

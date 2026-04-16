@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/apps/worker",
+    "incremental": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../src/shared/**/*.ts",
+    "../../src/modules/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "test",
+    "dist",
+    "**/*spec.ts",
+    "../../src/modules/iam/presentation/nats/**",
+    "../../src/modules/notifications/presentation/nats/**"
+  ]
+}

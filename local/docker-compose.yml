@@ -1,0 +1,111 @@
+services:
+  core-postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easy-validate
+    volumes:
+      - core-pg-data:/var/lib/postgresql/data
+    shm_size: "1g"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - core-net
+
+  core-redis:
+    image: redis:7-alpine
+    volumes:
+      - core-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - core-net
+
+  core-nats:
+    image: nats:latest
+    command: "--jetstream --config=/config/nats-server.conf"
+    volumes:
+      - core-nats-data:/data
+      - ./nats:/config
+    networks:
+      - core-net
+
+  core-init:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: Dockerfile.init
+    environment:
+      DATABASE_WRITE_URL: postgresql://postgres:postgres@core-postgres:5432/easy-validate
+    depends_on:
+      core-postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - core-net
+
+  core-migrate:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: Dockerfile.migrate
+    env_file:
+      - ../.env.docker
+    environment:
+      DATABASE_WRITE_URL: postgresql://postgres:postgres@core-postgres:5432/easy-validate
+    depends_on:
+      core-postgres:
+        condition: service_healthy
+      core-init:
+        condition: service_completed_successfully
+    restart: "no"
+    networks:
+      - core-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    networks:
+      - core-net
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: ""
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - core-net
+
+networks:
+  core-net:
+    driver: bridge
+
+volumes:
+  core-pg-data:
+  core-redis-data:
+  core-nats-data:
+  prometheus-data:
+  grafana-data:

@@ -1,0 +1,36 @@
+services:
+  core-postgres:
+    ports:
+      - "5432:5432"
+
+  core-redis:
+    ports:
+      - "6379:6379"
+
+  core-nats:
+    ports:
+      - "4222:4222"
+      - "6222:6222"
+      - "8222:8222"
+
+  prometheus:
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    ports:
+      - "3003:3000"
+    environment:
+      GF_SERVER_ROOT_URL: http://localhost:3003
+    restart: unless-stopped
+
+  core-init: {}
+
+  core-migrate: {}
+
+  api:
+    restart: unless-stopped
+
+  worker:
+    restart: unless-stopped

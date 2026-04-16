@@ -1,0 +1,11 @@
+{
+  "name": "Test User",
+  "middleName": null,
+  "age": null,
+  "address": {
+    "line1": "123 St",
+    "line2": null,
+    "city": "NYC"
+  },
+  "notes": null
+}

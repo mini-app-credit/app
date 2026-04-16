@@ -1,0 +1,6 @@
+export const HEALTH_DI = {
+  DB_INDICATOR: Symbol.for('DB_INDICATOR'),
+  REDIS_INDICATOR: Symbol.for('REDIS_INDICATOR'),
+  NATS_INDICATOR: Symbol.for('NATS_INDICATOR'),
+  S3_INDICATOR: Symbol.for('S3_INDICATOR'),
+};

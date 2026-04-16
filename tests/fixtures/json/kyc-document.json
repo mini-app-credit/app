@@ -1,0 +1,34 @@
+{
+  "applicant": {
+    "firstName": "Ivan",
+    "lastName": "Petrov",
+    "dateOfBirth": "1990-05-15",
+    "nationality": "RU",
+    "taxId": "123456789012"
+  },
+  "document": {
+    "type": "passport",
+    "number": "AB1234567",
+    "issuedBy": "FMS Russia",
+    "issuedDate": "2015-03-20",
+    "expiryDate": "2025-03-20"
+  },
+  "address": {
+    "street": "ul. Lenina 42",
+    "city": "Moscow",
+    "postalCode": "101000",
+    "country": "RU"
+  },
+  "employment": {
+    "status": "employed",
+    "employer": "Acme Corp",
+    "position": "Engineer",
+    "annualIncome": 85000,
+    "currency": "USD"
+  },
+  "riskFactors": {
+    "pep": false,
+    "sanctioned": false,
+    "adverseMedia": false
+  }
+}

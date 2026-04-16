@@ -1,0 +1,29 @@
+services:
+  worker:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: production
+    command: node dist/apps/worker/apps/worker/src/main.js
+    env_file:
+      - ../.env.docker
+    environment:
+      NAME: worker
+      WORKER_PORT: 3001
+      DATABASE_WRITE_URL: postgresql://postgres:postgres@core-postgres:5432/easy-validate
+      DATABASE_READ_REPLICA_URLS: postgresql://postgres:postgres@core-postgres:5432/easy-validate
+      S3_ENDPOINT: https://s3.us-east-1.amazonaws.com
+      S3_BUCKET_NAME: easy-validate-documents
+      S3_REGION: us-east-1
+      S3_FORCE_PATH_STYLE: "false"
+      REDIS_HOST: core-redis
+    depends_on:
+      core-postgres:
+        condition: service_healthy
+      core-migrate:
+        condition: service_completed_successfully
+      core-redis:
+        condition: service_healthy
+    networks:
+      - core-net
