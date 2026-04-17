@@ -19,6 +19,8 @@ export class Swagger {
         'Notifications',
         'Email template mappings: link domain event names to React Email templates for outbound mail',
       )
+      .addTag('Applications', 'Vendor CRUD and lifecycle management for credit applications')
+      .addTag('Recipient', 'Public endpoints for recipients to view and submit credit application forms')
       .addBearerAuth({
         type: 'http',
         scheme: 'bearer',
