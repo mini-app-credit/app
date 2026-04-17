@@ -5,8 +5,7 @@ import * as path from 'node:path';
 import { SHARED_DI_TOKENS } from '../constants';
 import { Database } from '../drizzle';
 
-/** Advisory lock id — serializes migration runs across api/worker replicas. */
-const MIGRATION_LOCK_KEY = 0x4d49_4752; // 'MIGR' in hex-ish
+const MIGRATION_LOCK_KEY = 0x4d49_4752;
 
 type QueryWithRows = {
   rows?: unknown[];
@@ -23,7 +22,7 @@ export class MigrationBootstrapService implements OnApplicationBootstrap {
   constructor(
     @Inject(SHARED_DI_TOKENS.DATABASE_CLIENT)
     private readonly db: Database,
-  ) {}
+  ) { }
 
   async onApplicationBootstrap(): Promise<void> {
     const migrationsDir = path.resolve(process.cwd(), 'migrations');
@@ -80,7 +79,15 @@ export class MigrationBootstrapService implements OnApplicationBootstrap {
           continue;
         }
 
-        await tx.execute(sql.raw(migrationSql));
+        const statements = migrationSql
+          .split('--> statement-breakpoint')
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        for (const statement of statements) {
+          await tx.execute(sql.raw(statement));
+        }
+
         await tx.execute(sql`INSERT INTO app_migrations (name) VALUES (${fileName})`);
         this.logger.log(`Applied migration: ${fileName}`);
       }
