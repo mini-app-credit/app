@@ -3,6 +3,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { LoggerModule } from 'nestjs-pino';
 import { loggerOptions } from 'src/shared';
 import {
+  ApplicationModule,
   HealthModule,
   IamModule,
   MetricsModule,
@@ -24,6 +25,7 @@ const isInvalid = invalidEnvs.includes(process.env.NODE_ENV!)
     HealthModule.forApi(),
     NotificationsModule.forApi(),
     IamModule.forApi(),
+    ApplicationModule.forApi(),
   ],
 })
 export class ApiAppModule { }
