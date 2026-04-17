@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import {
     pgTable, pgEnum, uuid, varchar, text, timestamp, integer, jsonb
 } from "drizzle-orm/pg-core";
-import { users } from "src/shared";
+import { users } from "./iam.schema";
 
 export const applicationStatusEnum = pgEnum('application_status', [
     'draft',
@@ -55,7 +55,6 @@ export const applications = pgTable('applications', {
     aiSummary: text('ai_summary'),
 
     vendorId: uuid('vendor_id').references(() => users.id, { onDelete: 'set null' }),
-
 
     meta: jsonb('meta').default({}),
 
