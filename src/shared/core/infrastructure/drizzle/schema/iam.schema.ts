@@ -1,10 +1,17 @@
 import { relations } from "drizzle-orm";
-import { integer, jsonb, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { integer, jsonb, pgEnum, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { AccountMetaProps, ProviderPrimitive } from "src/modules/iam/domain";
+
+export const userRoleEnum = pgEnum('user_role', [
+  'vendor',
+  'recipient',
+]);
+
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   unitAmount: integer('unit_amount').notNull().default(10000),
+  role: userRoleEnum('role').notNull().default('vendor'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
