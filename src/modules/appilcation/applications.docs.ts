@@ -1,5 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   CreateApplicationDto,
   DecideApplicationDto,
@@ -75,6 +75,38 @@ export class ApplicationsDocs {
       ApiResponse({ status: 200, description: 'Summary generated and stored' }),
       ApiResponse({ status: 400, description: 'Not in submitted status or model error' }),
       ApiResponse({ status: 404, description: 'Application not found' }),
+      ApiResponse({ status: 503, description: 'GEMINI_API_KEY not configured' }),
+    );
+
+  static readonly parsePdf = () =>
+    applyDecorators(
+      ApiOperation({
+        summary: 'Parse credit application PDF',
+        description:
+          'Upload a PDF file (max 10 MB). Google Gemini extracts application fields and returns them as JSON. Extra fields returned by the model are listed in droppedFields.',
+      }),
+      ApiConsumes('multipart/form-data'),
+      ApiBody({
+        schema: {
+          type: 'object',
+          required: ['file'],
+          properties: {
+            file: { type: 'string', format: 'binary', description: 'PDF file (max 10 MB)' },
+          },
+        },
+      }),
+      ApiResponse({
+        status: 200,
+        description: 'Parsed fields and any dropped extra fields',
+        schema: {
+          type: 'object',
+          properties: {
+            fields: { type: 'object', description: 'Recognised application fields extracted from the PDF' },
+            droppedFields: { type: 'array', items: { type: 'string' }, description: 'Extra keys returned by the model that were discarded' },
+          },
+        },
+      }),
+      ApiResponse({ status: 400, description: 'Invalid file or parse failure' }),
       ApiResponse({ status: 503, description: 'GEMINI_API_KEY not configured' }),
     );
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -9,7 +10,11 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { ApplicationService } from './application.service';
 import {
   CreateApplicationDto,
@@ -23,7 +28,7 @@ import { ApplicationsDocs } from './applications.docs';
 @Controller('applications')
 @ApplicationsDocs.tags()
 export class ApplicationsController {
-  constructor(private readonly service: ApplicationService) {}
+  constructor(private readonly service: ApplicationService) { }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -62,6 +67,28 @@ export class ApplicationsController {
   @ApplicationsDocs.decide()
   decide(@Param('id') id: string, @Body() dto: DecideApplicationDto) {
     return this.service.decide(id, dto);
+  }
+
+  @Post('parse-pdf')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (file.mimetype !== 'application/pdf') {
+          cb(new BadRequestException('Only PDF files are accepted'), false);
+        } else {
+          cb(null, true);
+        }
+      },
+    }),
+  )
+  
+  @ApplicationsDocs.parsePdf()
+  parsePdf(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('file is required');
+    return this.service.parsePdf(file.buffer);
   }
 
   @Post(':id/ai-summary')

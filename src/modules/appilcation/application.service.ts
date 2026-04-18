@@ -15,6 +15,26 @@ import {
 
 type TradeRefInsert = Omit<typeof tradeReferencesTable.$inferInsert, 'applicationId'>;
 
+export type ParsedApplicationFields = {
+  companyName?: string;
+  dba?: string;
+  country?: string;
+  website?: string;
+  revenueBand?: 'under_1m' | '1m_10m' | '10m_100m' | '100m_250m' | '250m_500m' | 'over_500m';
+  creditAmountRequested?: number;
+  creditTermRequested?: 'net_10' | 'net_20' | 'net_30';
+  billingContactName?: string;
+  billingContactEmail?: string;
+  tradeReferences?: {
+    businessName: string;
+    engagementStart?: string | null;
+    engagementEnd?: string | null;
+    contactName?: string | null;
+    contactEmail?: string | null;
+    contactPosition?: string | null;
+  }[];
+};
+
 function mapTradeRefs(
   refs: { businessName: string; engagementStart?: string | null; engagementEnd?: string | null; contactName?: string | null; contactEmail?: string | null; contactPosition?: string | null }[],
 ): TradeRefInsert[] {
@@ -43,7 +63,7 @@ export class ApplicationService {
     private readonly repo: ApplicationRepository,
     @Inject(NOTIFICATIONS_DI_TOKENS.SERVICES.EMAIL_SENDER)
     private readonly emailSender: EmailSenderService,
-  ) {}
+  ) { }
 
   async create(dto: CreateApplicationDto) {
     const { tradeReferences = [], vendorId, ...fields } = dto;
@@ -273,6 +293,78 @@ export class ApplicationService {
     });
 
     return this.repo.findById(id);
+  }
+
+  async parsePdf(fileBuffer: Buffer): Promise<{ fields: ParsedApplicationFields; droppedFields: string[] }> {
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'GEMINI_API_KEY is not set — add it to the API environment to enable PDF parsing',
+      );
+    }
+
+    const KNOWN_KEYS: (keyof ParsedApplicationFields)[] = [
+      'companyName', 'dba', 'country', 'website', 'revenueBand',
+      'creditAmountRequested', 'creditTermRequested',
+      'billingContactName', 'billingContactEmail', 'tradeReferences',
+    ];
+
+    try {
+      const modelName = process.env.GEMINI_MODEL?.trim() || 'gemini-3-flash-preview';
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: modelName });
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: 'application/pdf',
+            data: fileBuffer.toString('base64'),
+          },
+        },
+        {
+          text:
+            'Extract credit application fields from this PDF. Return ONLY valid JSON with these exact keys: ' +
+            'companyName, dba, country, website, revenueBand (one of: under_1m|1m_10m|10m_100m|100m_250m|250m_500m|over_500m), ' +
+            'creditAmountRequested (number), creditTermRequested (one of: net_10|net_20|net_30), ' +
+            'billingContactName, billingContactEmail, ' +
+            'tradeReferences (array of: businessName, engagementStart, engagementEnd, contactName, contactEmail, contactPosition). ' +
+            'If a field is not found, omit it. Do not include any fields outside this list.',
+        },
+      ]);
+
+      const raw = result.response.text()?.trim();
+      if (!raw) {
+        throw new BadRequestError('Empty response from the language model');
+      }
+
+      const jsonString = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+      const parsed: Record<string, unknown> = JSON.parse(jsonString);
+
+      const fields: ParsedApplicationFields = {};
+      const droppedFields: string[] = [];
+
+      for (const [key, value] of Object.entries(parsed)) {
+        if ((KNOWN_KEYS as string[]).includes(key)) {
+          (fields as Record<string, unknown>)[key] = value;
+        } else {
+          droppedFields.push(key);
+        }
+      }
+
+      if (Array.isArray(fields.tradeReferences)) {
+        fields.tradeReferences = fields.tradeReferences.slice(0, 2);
+      }
+
+      return { fields, droppedFields };
+    } catch (err) {
+      if (err instanceof BadRequestError || err instanceof ServiceUnavailableException) {
+        throw err;
+      }
+      this.logger.error('Gemini PDF parsing failed', err);
+      throw new BadRequestError(
+        err instanceof Error ? err.message : 'Failed to parse PDF',
+      );
+    }
   }
 
   async delete(id: string) {
