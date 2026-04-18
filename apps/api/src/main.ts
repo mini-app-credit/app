@@ -47,7 +47,16 @@ async function bootstrap() {
   app.useLogger(logger);
   app.enableShutdownHooks();
   Swagger.apply(app);
-  app.use(helmet());
+
+  const corsOrigins = process.env.CORS_ORIGIN?.split(',').map((s) => s.trim()).filter(Boolean);
+  app.enableCors({
+    origin: corsOrigins?.length ? corsOrigins : true,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+  });
+
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
   const config = app.get<AppConfig>(DI_TOKENS.CONFIG);
 
