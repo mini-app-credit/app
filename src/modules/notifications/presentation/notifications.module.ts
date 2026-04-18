@@ -12,6 +12,7 @@ const inlineEventPublisherProvider: Provider = {
 const providersWithPublisher = [...notificationsProviders, inlineEventPublisherProvider];
 
 const exportsList = [
+  NOTIFICATIONS_DI_TOKENS.CONFIGS.NOTIFICATIONS,
   NOTIFICATIONS_DI_TOKENS.REPOSITORIES.EMAIL_TEMPLATES,
   NOTIFICATIONS_DI_TOKENS.SERVICES.TEMPLATE_RENDERER,
   NOTIFICATIONS_DI_TOKENS.SERVICES.EMAIL_SENDER,

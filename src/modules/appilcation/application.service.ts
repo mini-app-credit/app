@@ -1,7 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { EmailSenderService } from 'src/modules/notifications/application/services/email-sender';
-import { NOTIFICATIONS_DI_TOKENS } from 'src/modules/notifications/infrastructure/constants';
+import {
+  NOTIFICATIONS_DI_TOKENS,
+  type NotificationsConfig,
+} from 'src/modules/notifications';
 import { BadRequestError, tradeReferences as tradeReferencesTable } from 'src/shared';
 import { ApplicationRepository } from './application.repository';
 import {
@@ -52,8 +55,23 @@ import {
   InvalidApplicationTransitionError,
 } from './applications.errors';
 
-/** User-facing app origin for links in emails (no env — local dev). */
-const PUBLIC_APP_BASE_URL = 'http://localhost:4000' as const;
+function stripTrailingSlashes(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function resolvePublicAppOrigin(config: NotificationsConfig): string {
+  const client = config.CLIENT_URL?.trim();
+  if (client) return stripTrailingSlashes(client);
+  const verify = config.EMAIL_VERIFY_URL_BASE?.trim();
+  if (verify) {
+    try {
+      return new URL(verify).origin;
+    } catch {
+      /* invalid URL */
+    }
+  }
+  return 'http://localhost:4000';
+}
 
 @Injectable()
 export class ApplicationService {
@@ -63,6 +81,8 @@ export class ApplicationService {
     private readonly repo: ApplicationRepository,
     @Inject(NOTIFICATIONS_DI_TOKENS.SERVICES.EMAIL_SENDER)
     private readonly emailSender: EmailSenderService,
+    @Inject(NOTIFICATIONS_DI_TOKENS.CONFIGS.NOTIFICATIONS)
+    private readonly notificationsConfig: NotificationsConfig,
   ) { }
 
   async create(dto: CreateApplicationDto) {
@@ -127,7 +147,8 @@ export class ApplicationService {
       sentAt: new Date(),
     });
 
-    const recipientLink = `${PUBLIC_APP_BASE_URL}/apply/${tokenRecord.token}`;
+    const base = resolvePublicAppOrigin(this.notificationsConfig);
+    const recipientLink = `${base}/apply/${tokenRecord.token}`;
 
     this.logger.log(`Recipient link for application ${id}: ${recipientLink}`);
 
@@ -188,7 +209,10 @@ export class ApplicationService {
       const [emailError] = await this.emailSender.send({
         to: app.billingContactEmail ?? app.recipientEmail ?? '',
         subject: 'Credit application submitted',
-        html: buildVendorNotificationEmail(app.id),
+        html: buildVendorNotificationEmail(
+          app.id,
+          resolvePublicAppOrigin(this.notificationsConfig),
+        ),
       });
 
       if (emailError) {
@@ -383,8 +407,8 @@ function buildRecipientEmail(name: string, link: string): string {
   `;
 }
 
-function buildVendorNotificationEmail(applicationId: string): string {
-  const url = `${PUBLIC_APP_BASE_URL}/applications/${applicationId}`;
+function buildVendorNotificationEmail(applicationId: string, publicAppBaseUrl: string): string {
+  const url = `${publicAppBaseUrl}/applications/${applicationId}`;
   return `
     <h2>Application submitted</h2>
     <p>Application <strong>${applicationId}</strong> has been submitted by the recipient.</p>
