@@ -1,7 +1,8 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { Inject, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { EmailSenderService } from 'src/modules/notifications/application/services/email-sender';
 import { NOTIFICATIONS_DI_TOKENS } from 'src/modules/notifications/infrastructure/constants';
-import { tradeReferences as tradeReferencesTable } from 'src/shared';
+import { BadRequestError, tradeReferences as tradeReferencesTable } from 'src/shared';
 import { ApplicationRepository } from './application.repository';
 import {
   CreateApplicationDto,
@@ -30,6 +31,9 @@ import {
   ApplicationTokenUsedError,
   InvalidApplicationTransitionError,
 } from './applications.errors';
+
+/** User-facing app origin for links in emails (no env — local dev). */
+const PUBLIC_APP_BASE_URL = 'http://localhost:4000' as const;
 
 @Injectable()
 export class ApplicationService {
@@ -103,7 +107,7 @@ export class ApplicationService {
       sentAt: new Date(),
     });
 
-    const recipientLink = `${process.env.API_BASE_URL}/apply/${tokenRecord.token}`;
+    const recipientLink = `${PUBLIC_APP_BASE_URL}/apply/${tokenRecord.token}`;
 
     this.logger.log(`Recipient link for application ${id}: ${recipientLink}`);
 
@@ -161,11 +165,10 @@ export class ApplicationService {
     const updated = await this.repo.findById(app.id);
 
     if (app.vendorId) {
-      const vendorLink = `${process.env.API_BASE_URL}/applications/${app.id}`;
       const [emailError] = await this.emailSender.send({
         to: app.billingContactEmail ?? app.recipientEmail ?? '',
         subject: 'Credit application submitted',
-        html: buildVendorNotificationEmail(app.id, vendorLink),
+        html: buildVendorNotificationEmail(app.id),
       });
 
       if (emailError) {
@@ -174,6 +177,77 @@ export class ApplicationService {
     }
 
     return updated;
+  }
+
+  async generateAiSummary(id: string) {
+    const app = await this.repo.findById(id);
+    if (!app) throw new ApplicationNotFoundError(id);
+
+    if (app.status !== 'submitted') {
+      throw new BadRequestError('AI summary is only available for applications in submitted status');
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY?.trim();
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'GEMINI_API_KEY is not set — add it to the API environment to enable AI summaries',
+      );
+    }
+
+    const payload = {
+      companyName: app.companyName,
+      dba: app.dba,
+      country: app.country,
+      website: app.website,
+      revenueBand: app.revenueBand,
+      creditAmountRequested: app.creditAmountRequested,
+      creditTermRequested: app.creditTermRequested,
+      billingContactName: app.billingContactName,
+      billingContactEmail: app.billingContactEmail,
+      tradeReferences: (app.tradeReferences ?? []).map((r) => ({
+        businessName: r.businessName,
+        engagementStart: r.engagementStart,
+        engagementEnd: r.engagementEnd,
+        contactName: r.contactName,
+        contactEmail: r.contactEmail,
+        contactPosition: r.contactPosition,
+      })),
+    };
+
+    try {
+      const modelName =
+        process.env.GEMINI_MODEL?.trim() || 'gemini-3-flash-preview';
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction:
+          'You are a credit analyst assistant. Given JSON application data, write a concise advisory summary (4–8 sentences) for the vendor: key strengths, risks, and whether to lean toward approve, reject, or approve with adjusted terms. This is advisory only; the vendor makes the final decision. Plain English, no markdown headings.',
+      });
+
+      const result = await model.generateContent(
+        `Application data (JSON):\n${JSON.stringify(payload, null, 2)}`,
+      );
+
+      const text = result.response.text()?.trim();
+      if (!text) {
+        throw new BadRequestError('Empty response from the language model');
+      }
+
+      await this.repo.update(id, { aiSummary: text });
+    } catch (err) {
+      if (err instanceof BadRequestError || err instanceof ApplicationNotFoundError) {
+        throw err;
+      }
+      if (err instanceof ServiceUnavailableException) {
+        throw err;
+      }
+      this.logger.error('Gemini summary failed', err);
+      throw new BadRequestError(
+        err instanceof Error ? err.message : 'Failed to generate AI summary',
+      );
+    }
+
+    return this.repo.findById(id);
   }
 
   async decide(id: string, dto: DecideApplicationDto) {
@@ -217,10 +291,11 @@ function buildRecipientEmail(name: string, link: string): string {
   `;
 }
 
-function buildVendorNotificationEmail(applicationId: string, link: string): string {
+function buildVendorNotificationEmail(applicationId: string): string {
+  const url = `${PUBLIC_APP_BASE_URL}/applications/${applicationId}`;
   return `
     <h2>Application submitted</h2>
     <p>Application <strong>${applicationId}</strong> has been submitted by the recipient.</p>
-    <p>Review it here: <a href="${link}">${link}</a></p>
+    <p>Review it here: <a href="${url}">${url}</a></p>
   `;
 }

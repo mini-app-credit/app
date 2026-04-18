@@ -64,6 +64,20 @@ export class ApplicationsDocs {
       ApiResponse({ status: 409, description: 'Application is not in submitted status' }),
     );
 
+  static readonly aiSummary = () =>
+    applyDecorators(
+      ApiOperation({
+        summary: 'Generate AI advisory summary',
+        description:
+          'Uses Google Gemini to draft a short advisory summary for a submitted application. Persists `aiSummary`. Requires GEMINI_API_KEY.',
+      }),
+      ApiParam({ name: 'id', type: String, format: 'uuid' }),
+      ApiResponse({ status: 200, description: 'Summary generated and stored' }),
+      ApiResponse({ status: 400, description: 'Not in submitted status or model error' }),
+      ApiResponse({ status: 404, description: 'Application not found' }),
+      ApiResponse({ status: 503, description: 'GEMINI_API_KEY not configured' }),
+    );
+
   static readonly delete = () =>
     applyDecorators(
       ApiOperation({ summary: 'Delete application' }),

@@ -64,6 +64,13 @@ export class ApplicationsController {
     return this.service.decide(id, dto);
   }
 
+  @Post(':id/ai-summary')
+  @HttpCode(HttpStatus.OK)
+  @ApplicationsDocs.aiSummary()
+  generateAiSummary(@Param('id') id: string) {
+    return this.service.generateAiSummary(id);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApplicationsDocs.delete()
