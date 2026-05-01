@@ -1,8 +1,10 @@
 import { DynamicModule, Module } from '@nestjs/common';
-import { ApplicationRepository } from './application.repository';
-import { ApplicationService } from './application.service';
-import { ApplicationsController } from './applications.controller';
-import { RecipientController } from './recipient.controller';
+import { ApplicationsController } from './presentation/applications.controller';
+import { RecipientController } from './presentation/recipient.controller';
+import {
+  applicationInfrastructureProviders,
+  applicationUseCaseProviders,
+} from './presentation/application.provider';
 
 @Module({})
 export class ApplicationModule {
@@ -10,7 +12,10 @@ export class ApplicationModule {
     return {
       module: ApplicationModule,
       controllers: [ApplicationsController, RecipientController],
-      providers: [ApplicationRepository, ApplicationService],
+      providers: [
+        ...applicationInfrastructureProviders,
+        ...applicationUseCaseProviders,
+      ],
     };
   }
 }

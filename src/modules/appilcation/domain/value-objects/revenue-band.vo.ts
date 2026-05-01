@@ -1,0 +1,1 @@
+export type RevenueBand = "under_1m" | "1m_10m" | "10m_100m" | "100m_250m" | "250m_500m" | "over_500m";

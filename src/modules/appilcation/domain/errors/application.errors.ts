@@ -1,4 +1,4 @@
-import { NotFoundError, BadRequestError, ConflictError } from 'src/shared';
+import { BadRequestError, ConflictError, NotFoundError } from 'src/shared';
 
 export class ApplicationNotFoundError extends NotFoundError {
   constructor(id: string) {
@@ -27,5 +27,11 @@ export class ApplicationTokenUsedError extends BadRequestError {
 export class InvalidApplicationTransitionError extends ConflictError {
   constructor(from: string, to: string) {
     super(`Cannot transition application from '${from}' to '${to}'`);
+  }
+}
+
+export class AiSummaryNotAvailableError extends BadRequestError {
+  constructor() {
+    super('AI summary is only available for applications in submitted status');
   }
 }

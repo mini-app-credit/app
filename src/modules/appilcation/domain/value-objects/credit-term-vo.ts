@@ -1,0 +1,1 @@
+export type CreditTerm = "net_10" | "net_20" | "net_30";
